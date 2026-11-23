@@ -4,6 +4,7 @@
   "description": "Detect and connect to local herdr-core (hc) terminals directly inside VS Code with zero Go dependencies — supporting both Native Pseudoterminal and XTerm Webview modes.",
   "version": "0.1.0",
   "publisher": "lucacicii",
+  "icon": "resources/icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",

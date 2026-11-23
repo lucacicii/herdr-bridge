@@ -46,6 +46,7 @@ const requiredEntries = [
   'extension/dist/extension.js',
   'extension/dist/webview/terminal.js',
   'extension/dist/webview/terminal.css',
+  'extension/resources/icon.png',
   'extension/resources/herdr-icon.svg',
   'extension/LICENSE',
 ];
