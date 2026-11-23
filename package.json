@@ -1,7 +1,7 @@
 {
   "name": "herdr-bridge",
   "displayName": "Herdr Bridge",
-  "description": "Detect and connect to local herdr-core (hc) terminals directly inside VS Code with zero Go dependencies — supporting both Native Pseudoterminal and XTerm Webview modes.",
+  "description": "Connect VS Code to local herdr-core (hc) — manage Spaces, monitor live AI agent sessions, attach shared terminals in Native or XTerm Webview mode, and send editor code references.",
   "version": "0.1.0",
   "publisher": "lucacicii",
   "icon": "resources/icon.png",
