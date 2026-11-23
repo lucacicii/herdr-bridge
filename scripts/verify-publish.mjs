@@ -47,7 +47,7 @@ const requiredEntries = [
   'extension/dist/webview/terminal.js',
   'extension/dist/webview/terminal.css',
   'extension/resources/icon.png',
-  'extension/resources/herdr-icon.svg',
+  'extension/resources/activity-icon.svg',
   'extension/LICENSE',
 ];
 for (const entry of requiredEntries) {
