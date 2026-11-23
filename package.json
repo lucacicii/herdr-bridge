@@ -1,0 +1,286 @@
+{
+  "name": "herdr-bridge",
+  "displayName": "Herdr Bridge",
+  "description": "Detect and connect to local herdr-core (hc) terminals directly inside VS Code with zero Go dependencies — supporting both Native Pseudoterminal and XTerm Webview modes.",
+  "version": "0.1.0",
+  "publisher": "lucacicii",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucacicii/herdr-bridge"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "Terminal"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.webview.json --noEmit",
+    "smoke:hc": "node scripts/smoke-hc.mjs",
+    "package": "pnpm run build && node scripts/package-vsix.mjs",
+    "publish:vscode": "node scripts/publish.mjs --target=vscode",
+    "publish:openvsx": "node scripts/publish.mjs --target=openvsx",
+    "publish:all": "node scripts/publish.mjs --target=all",
+    "verify:publish": "node scripts/verify-publish.mjs"
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "herdr-bridge",
+          "title": "Herdr Bridge",
+          "icon": "resources/herdr-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "herdr-bridge": [
+        {
+          "id": "herdrBridge.statusView",
+          "name": "Connection"
+        },
+        {
+          "id": "herdrBridge.sessionsView",
+          "name": "Sessions"
+        },
+        {
+          "id": "herdrBridge.terminalsView",
+          "name": "Spaces & Terminals"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Herdr Bridge",
+      "properties": {
+        "herdrBridge.socketPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to herdr-core (hc) Unix socket. Leave empty to use HC_SOCKET or ~/.local/state/herdr-core/default/default.sock."
+        },
+        "herdrBridge.terminalMode": {
+          "type": "string",
+          "enum": [
+            "native",
+            "webview"
+          ],
+          "enumDescriptions": [
+            "Mode A: VS Code Native Pseudoterminal (best shortcut & layout integration)",
+            "Mode B: Embedded xterm.js Webview (exact shared PTY dimensions, focus tracking & drag-drop @path)"
+          ],
+          "default": "native",
+          "description": "Default terminal host mode when opening a Herdr terminal."
+        },
+        "herdrBridge.autoStartDaemon": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start the local hc daemon if hc is installed and the default socket is not running."
+        },
+        "herdrBridge.historyLines": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 0,
+          "maximum": 50000,
+          "description": "Number of scrollback history lines requested when attaching to a Herdr terminal."
+        },
+        "herdrBridge.notifications": {
+          "type": "string",
+          "enum": [
+            "all",
+            "attentionOnly",
+            "off"
+          ],
+          "enumDescriptions": [
+            "Notify on blocked/error and when a working session finishes",
+            "Notify only when a session needs your attention (blocked or error)",
+            "Disable session status notifications"
+          ],
+          "default": "all",
+          "description": "Notification level for Herdr agent session state transitions."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "herdrBridge.refresh",
+        "title": "Herdr Bridge: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "herdrBridge.startDaemon",
+        "title": "Herdr Bridge: Start herdr-core Daemon",
+        "icon": "$(play)"
+      },
+      {
+        "command": "herdrBridge.installCore",
+        "title": "Herdr Bridge: Install herdr-core (hc)",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "herdrBridge.switchMode",
+        "title": "Herdr Bridge: Switch Terminal Mode (Native / XTerm Webview)",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "herdrBridge.newTerminal",
+        "title": "Herdr Bridge: New Terminal",
+        "icon": "$(add)"
+      },
+      {
+        "command": "herdrBridge.openTerminal",
+        "title": "Herdr Bridge: Open Terminal"
+      },
+      {
+        "command": "herdrBridge.openTerminalNative",
+        "title": "Open in Native Terminal (Mode A)",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "herdrBridge.openTerminalWebview",
+        "title": "Open in XTerm Webview (Mode B)",
+        "icon": "$(window)"
+      },
+      {
+        "command": "herdrBridge.interruptTerminal",
+        "title": "Interrupt (Ctrl+C)",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "herdrBridge.killTerminal",
+        "title": "Kill Terminal",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "herdrBridge.newSpace",
+        "title": "Herdr Bridge: New Space",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "herdrBridge.newTerminalInSpace",
+        "title": "New Terminal in Space",
+        "icon": "$(add)"
+      },
+      {
+        "command": "herdrBridge.renameSpace",
+        "title": "Rename Space",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "herdrBridge.openSpaceFolder",
+        "title": "Open Space Folder in New Window",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "herdrBridge.adoptTerminalToSpace",
+        "title": "Adopt into Space...",
+        "icon": "$(move)"
+      },
+      {
+        "command": "herdrBridge.sendSelectionToTerminal",
+        "title": "Herdr Bridge: Send Reference (@path#L) to Active Terminal"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "herdrBridge.newSpace",
+          "when": "view == herdrBridge.terminalsView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "herdrBridge.newTerminal",
+          "when": "view == herdrBridge.terminalsView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "herdrBridge.switchMode",
+          "when": "view == herdrBridge.terminalsView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "herdrBridge.refresh",
+          "when": "view == herdrBridge.terminalsView",
+          "group": "navigation@4"
+        },
+        {
+          "command": "herdrBridge.refresh",
+          "when": "view == herdrBridge.statusView",
+          "group": "navigation"
+        },
+        {
+          "command": "herdrBridge.refresh",
+          "when": "view == herdrBridge.sessionsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "herdrBridge.newTerminalInSpace",
+          "when": "view == herdrBridge.terminalsView && viewItem == herdrSpace",
+          "group": "inline"
+        },
+        {
+          "command": "herdrBridge.openSpaceFolder",
+          "when": "view == herdrBridge.terminalsView && viewItem == herdrSpace",
+          "group": "1_space@1"
+        },
+        {
+          "command": "herdrBridge.renameSpace",
+          "when": "view == herdrBridge.terminalsView && viewItem == herdrSpace",
+          "group": "1_space@2"
+        },
+        {
+          "command": "herdrBridge.openTerminalNative",
+          "when": "(view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)) || (view == herdrBridge.sessionsView && viewItem == herdrSession)",
+          "group": "1_open@1"
+        },
+        {
+          "command": "herdrBridge.openTerminalWebview",
+          "when": "(view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)) || (view == herdrBridge.sessionsView && viewItem == herdrSession)",
+          "group": "1_open@2"
+        },
+        {
+          "command": "herdrBridge.adoptTerminalToSpace",
+          "when": "view == herdrBridge.terminalsView && viewItem == herdrTerminalUnassigned",
+          "group": "2_space@1"
+        },
+        {
+          "command": "herdrBridge.interruptTerminal",
+          "when": "(view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)) || (view == herdrBridge.sessionsView && viewItem == herdrSession)",
+          "group": "3_control@1"
+        },
+        {
+          "command": "herdrBridge.killTerminal",
+          "when": "(view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)) || (view == herdrBridge.sessionsView && viewItem == herdrSession)",
+          "group": "3_control@2"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "herdrBridge.sendSelectionToTerminal",
+          "group": "navigation@99"
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-web-links": "^0.11.0",
+    "@xterm/xterm": "^5.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.25.0",
+    "ovsx": "^1.0.2",
+    "typescript": "^5.8.3"
+  }
+}
