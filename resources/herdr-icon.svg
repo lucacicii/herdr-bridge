@@ -1,5 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="3" y="4" width="18" height="16" rx="3" />
-  <path d="M7 9l3 3-3 3" />
-  <path d="M13 15h4" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- Ram head + bridge arch silhouette -->
+  <path
+    d="M6.2 9.2C4.1 9.4 2.5 11.1 2.6 12.8C2.7 14 3.8 14.6 5.2 14.9C6.1 15.1 6.3 16.5 7.4 16.9C9.3 17.5 11.1 14.5 12.5 12.5C14.1 10.3 16.7 10.1 18.4 11.6C19.6 12.7 20.1 14.2 20.2 15.6"
+    stroke="currentColor"
+    stroke-width="1.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Curled horn -->
+  <path
+    d="M6.3 9.2C7.4 7.7 9.9 7.8 10.6 9.5C11.1 10.8 10.1 12.3 8.9 12.1C8.1 11.9 7.8 11.1 8.4 10.6"
+    stroke="currentColor"
+    stroke-width="1.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Terminal prompt (>_) inside ram head -->
+  <path
+    d="M4.6 11.2L5.7 11.9L4.6 12.6"
+    stroke="currentColor"
+    stroke-width="1.3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M6.2 12.7H7.3"
+    stroke="currentColor"
+    stroke-width="1.3"
+    stroke-linecap="round"
+  />
+  <!-- Two bridge node dots -->
+  <circle cx="12.3" cy="12.8" r="1.45" fill="currentColor" />
+  <circle cx="17.8" cy="11.2" r="1.45" fill="currentColor" />
+  <!-- Plug block at the right end -->
+  <rect x="18.7" y="15.4" width="3" height="3" rx="0.6" fill="currentColor" />
 </svg>
