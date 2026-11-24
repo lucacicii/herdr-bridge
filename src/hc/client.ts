@@ -37,6 +37,24 @@ export function defaultSocketPath(): string {
   return path.join(os.homedir(), '.local', 'state', 'herdr-core', 'default', 'default.sock');
 }
 
+function sanitizeHcTerminalName(raw?: string): string | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  const normalized = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^[^a-z0-9]+/, '')
+    .replace(/-+$/, '')
+    .slice(0, 32)
+    .replace(/-+$/, '');
+  if (!normalized || /^[ts]\d+$/i.test(normalized)) {
+    return undefined;
+  }
+  return normalized;
+}
+
 /**
  * Pure TypeScript client for herdr-core (hc) over Unix Domain Socket.
  * Supports both short-lived JSON-RPC calls and persistent framed binary streams.
@@ -140,7 +158,14 @@ export class HcClient {
   }
 
   async runTerminal(params: HcRunParams): Promise<HcTerminal> {
-    const raw = await this.call<HcTerminal | { terminal: HcTerminal }>('terminal.run', params);
+    const sanitizedName = sanitizeHcTerminalName(params.name);
+    const payload: HcRunParams = { ...params };
+    if (sanitizedName) {
+      payload.name = sanitizedName;
+    } else {
+      delete payload.name;
+    }
+    const raw = await this.call<HcTerminal | { terminal: HcTerminal }>('terminal.run', payload);
     if (raw && 'address' in raw && typeof raw.address === 'string') {
       return raw;
     }
