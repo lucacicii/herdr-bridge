@@ -1,4 +1,4 @@
-# Herdr Bridge
+# Herdr Core Bridge
 
 [English](#english) | [中文](#中文)
 
