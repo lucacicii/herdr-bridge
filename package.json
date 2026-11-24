@@ -14,8 +14,8 @@
     "vscode": "^1.90.0"
   },
   "categories": [
-    "Other",
-    "Terminal"
+    "AI",
+    "Other"
   ],
   "activationEvents": [
     "onStartupFinished"
