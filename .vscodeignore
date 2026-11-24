@@ -1,5 +1,7 @@
 .vscode/**
 .vscode-test/**
+.github/**
+.env*
 src/**
 scripts/**
 tsconfig.json
