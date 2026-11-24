@@ -30,6 +30,7 @@
     "publish:vscode": "node scripts/publish.mjs --target=vscode",
     "publish:openvsx": "node scripts/publish.mjs --target=openvsx",
     "publish:all": "node scripts/publish.mjs --target=all",
+    "release": "pnpm run typecheck && pnpm run package && pnpm run verify:publish && node scripts/publish.mjs --target=all",
     "verify:publish": "node scripts/verify-publish.mjs"
   },
   "contributes": {
