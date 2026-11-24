@@ -144,6 +144,14 @@ container.addEventListener('drop', (event) => {
   }
 });
 
+container.addEventListener('mousedown', () => {
+  term.focus();
+});
+
+window.addEventListener('focus', () => {
+  term.focus();
+});
+
 fitBtn.addEventListener('click', () => {
   autoFit = !autoFit;
   fitBtn.textContent = autoFit ? 'Fit: On' : 'Fit: Off';
@@ -173,10 +181,15 @@ window.addEventListener('message', (event) => {
     | { type: 'ready'; address?: string; title: string; cols: number; rows: number }
     | { type: 'data'; data: string }
     | { type: 'resize'; cols: number; rows: number }
+    | { type: 'focus' }
     | { type: 'closed'; reason: string }
     | { type: 'error'; message: string };
 
   switch (msg.type) {
+    case 'focus':
+      fitAndNotify();
+      term.focus();
+      break;
     case 'ready':
       if (msg.address) {
         vscode.setState({ terminalId: msg.address });

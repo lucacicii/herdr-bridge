@@ -26,6 +26,7 @@ export class WebviewTerminalHandle implements HerdrTerminalHandle {
   private readonly decoder = new TextDecoder('utf-8');
   private stream: HcAttachStream | undefined;
   private pendingOutput = '';
+  private pendingInput: string[] = [];
   private flushTimer: NodeJS.Timeout | undefined;
   private webviewReady = false;
   private disposed = false;
@@ -63,11 +64,11 @@ export class WebviewTerminalHandle implements HerdrTerminalHandle {
     }
 
     this.panel.iconPath = new vscode.ThemeIcon('terminal');
-    this.panel.webview.html = this.buildHtml(this.panel.webview);
 
     this.panel.onDidChangeViewState((e) => {
       if (e.webviewPanel.active) {
         this.onBecameActive(this.terminalId);
+        void this.panel.webview.postMessage({ type: 'focus' });
       }
       this.stream?.focus(e.webviewPanel.active);
     });
@@ -80,6 +81,8 @@ export class WebviewTerminalHandle implements HerdrTerminalHandle {
     this.panel.webview.onDidReceiveMessage((msg: WebviewInboundMessage) => {
       void this.handleWebviewMessage(msg);
     });
+
+    this.panel.webview.html = this.buildHtml(this.panel.webview);
   }
 
   private async handleWebviewMessage(msg: WebviewInboundMessage): Promise<void> {
@@ -89,7 +92,11 @@ export class WebviewTerminalHandle implements HerdrTerminalHandle {
         await this.attach(msg.cols, msg.rows);
         break;
       case 'input':
-        this.stream?.writeData(msg.data);
+        if (this.stream) {
+          this.stream.writeData(msg.data);
+        } else {
+          this.pendingInput.push(msg.data);
+        }
         break;
       case 'paste':
         if (msg.text) {
@@ -174,6 +181,13 @@ export class WebviewTerminalHandle implements HerdrTerminalHandle {
       }
 
       this.stream = stream;
+      stream.focus(this.panel.active);
+      if (this.pendingInput.length > 0) {
+        const queued = this.pendingInput.splice(0, this.pendingInput.length);
+        for (const chunk of queued) {
+          stream.writeData(chunk);
+        }
+      }
       void this.panel.webview.postMessage({
         type: 'ready',
         address: stream.meta.terminal.address,

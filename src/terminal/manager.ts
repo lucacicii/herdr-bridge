@@ -34,6 +34,7 @@ export class TerminalManager implements vscode.Disposable {
         const handle = this.nativeRegistry.get(term);
         if (handle) {
           this.activeTerminalId = handle.terminalId;
+          handle.setFocused(true);
           this.persistNativeTerminals();
         }
       })
@@ -160,7 +161,7 @@ export class TerminalManager implements vscode.Disposable {
     if (!termInfo) {
       termInfo = await this.hub.client.getTerminal(terminalId).catch(() => undefined);
     }
-    if (!termInfo) {
+    if (!termInfo || termInfo.state !== 'live') {
       panel.dispose();
       return;
     }
@@ -206,7 +207,7 @@ export class TerminalManager implements vscode.Disposable {
         continue;
       }
       const termInfo = this.hub.getTerminalById(id);
-      if (!termInfo) {
+      if (!termInfo || termInfo.state !== 'live') {
         continue;
       }
       await this.openTerminal(id, 'native', {

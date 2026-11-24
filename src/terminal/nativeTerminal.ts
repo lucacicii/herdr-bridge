@@ -22,6 +22,7 @@ export class NativeTerminalHandle implements HerdrTerminalHandle {
   private readonly disposeEmitter = new vscode.EventEmitter<void>();
   private readonly decoder = new TextDecoder('utf-8');
   private stream: HcAttachStream | undefined;
+  private pendingInput: string[] = [];
   private disposed = false;
 
   constructor(
@@ -43,7 +44,11 @@ export class NativeTerminalHandle implements HerdrTerminalHandle {
         this.fireDisposed();
       },
       handleInput: (data) => {
-        this.stream?.writeData(data);
+        if (this.stream) {
+          this.stream.writeData(data);
+        } else {
+          this.pendingInput.push(data);
+        }
       },
       setDimensions: (dimensions) => {
         this.stream?.resize(dimensions.columns, dimensions.rows);
@@ -54,12 +59,17 @@ export class NativeTerminalHandle implements HerdrTerminalHandle {
       name: `Herdr: ${formatTerminalDisplayName(termInfo)}`,
       pty,
       iconPath: new vscode.ThemeIcon('terminal'),
+      isTransient: true,
     });
     registry.set(this.terminal, this);
   }
 
   getCwd(): string {
     return this.termInfo.cwd;
+  }
+
+  setFocused(focused: boolean): void {
+    this.stream?.focus(focused);
   }
 
   private async attach(dims?: vscode.TerminalDimensions): Promise<void> {
@@ -84,6 +94,13 @@ export class NativeTerminalHandle implements HerdrTerminalHandle {
       }
 
       this.stream = stream;
+      stream.focus(true);
+      if (this.pendingInput.length > 0) {
+        const queued = this.pendingInput.splice(0, this.pendingInput.length);
+        for (const chunk of queued) {
+          stream.writeData(chunk);
+        }
+      }
 
       stream.on('data', (chunk: Buffer) => {
         const text = this.decoder.decode(chunk, { stream: true });
