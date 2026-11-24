@@ -18,6 +18,19 @@ Connect VS Code directly to your local `herdr-core` (`hc`) daemon — monitor li
   - **Mode B (`webview`)**: Embedded `@xterm/xterm` panel — exact shared PTY dimension sync (`Fit: On/Off`), focus tracking, multi-line bracketed paste, file drag-and-drop (`@relative/path`), and `path:line` editor navigation.
 - **Editor Integration**: Right-click any editor selection to send `@relative/path#Lstart-end` directly into the active Herdr terminal.
 
+### Works Together with Agent Resume Panel
+
+**Herdr Core Bridge** and **[Agent Resume Panel](https://github.com/lucacicii/agent-resume-panel)** ([Marketplace](https://marketplace.visualstudio.com/items?itemName=lucacicii.agent-resume-panel-v2) · [Open VSX](https://open-vsx.org/extension/wuzhengzhe/agent-resume-panel)) form a complementary pair in VS Code:
+
+- **Herdr Core Bridge** manages **live runtime terminals & Spaces** (`hc` daemon, live `working`/`blocked`/`done`/`idle` states, Native & XTerm Webview PTY attach, `@path#L` editor references).
+- **Agent Resume Panel** manages **session history, GTD & knowledge** (indexed transcripts across Codex, Claude Code, Antigravity, Grok, OpenCode, Pi, Prime Agent, OMP, Cursor; Markdown notes; LLM Summarize / Auto Rename / Handoff).
+
+When both extensions are installed, they automatically connect via an in-editor extension API:
+
+- **Readable Session Titles**: Herdr Core Bridge displays matched session titles from Agent Resume Panel on live Herdr sessions and Space terminals instead of raw terminal IDs.
+- **One-Click Context Actions**: Right-click any terminal in Herdr Bridge to **Preview**, **Open Note**, or **Set GTD Status** directly in Agent Resume Panel.
+- **Seamless Resume & Dispatch**: Agent Resume Panel displays live Herdr status badges in its tree views, auto-resumes Herdr-tracked sessions through Herdr Core Bridge, and syncs project aliases to Herdr Space names.
+
 ### Configuration
 
 - `herdrBridge.terminalMode`: Default terminal mode (`"native"` or `"webview"`).
@@ -54,6 +67,19 @@ Press `F5` in VS Code inside this folder to launch the Extension Development Hos
   - **模式 A（`native`）**：基于 VS Code 原生 `Pseudoterminal` —— 原生快捷键（`Cmd+F`、`Cmd+K`）、自由拖拽布局、点击 `path:line` 跳转代码。
   - **模式 B（`webview`）**：内嵌 `@xterm/xterm` 面板 —— 精确同步共享 PTY 尺寸（支持 `Fit: On/Off` 切换）、真实焦点上报、多行 Bracketed Paste、拖入文件自动生成 `@relative/path` 与点击 `path:line` 跳转。
 - **编辑器联动**：在代码编辑区选中内容后右键，直接将 `@relative/path#Lstart-end` 发送到当前活跃的 Herdr 终端。
+
+### 与 Agent Resume Panel 配合使用
+
+**Herdr Core Bridge** 与 **[Agent Resume Panel](https://github.com/lucacicii/agent-resume-panel)**（[Marketplace](https://marketplace.visualstudio.com/items?itemName=lucacicii.agent-resume-panel-v2) · [Open VSX](https://open-vsx.org/extension/wuzhengzhe/agent-resume-panel)）在 VS Code 中形成互补联动：
+
+- **Herdr Core Bridge** 负责**运行态终端与 Space 管理**（连接 `hc` 守护进程、实时 `working`/`blocked`/`done`/`idle` 状态、Native 与 XTerm Webview 共享 PTY 附着、发送 `@path#L` 代码引用）。
+- **Agent Resume Panel** 负责**历史会话索引、GTD 与知识沉淀**（索引 Codex、Claude Code、Antigravity、Grok、OpenCode、Pi、Prime Agent、OMP、Cursor 历史会话、Markdown 笔记与 LLM 摘要 / 重命名 / Handoff）。
+
+同时安装两个扩展时会自动通过内部扩展 API 双向打通：
+
+- **可读会话标题同步**：Herdr Core Bridge 会从 Agent Resume Panel 匹配对应会话标题并展示在活跃终端上，不再只显示原始终端 ID。
+- **终端右键快捷操作**：在 Herdr Bridge 终端列表右键即可直接调用 Agent Resume Panel 打开**会话预览**、**Markdown 笔记**或设置 **GTD 状态**。
+- **无缝恢复与别名同步**：Agent Resume Panel 侧边栏会实时展示 Herdr 运行状态徽标、自动通过 Herdr Core Bridge 恢复会话，并将项目别名自动同步为 Herdr Space 名称。
 
 ### 配置项
 
