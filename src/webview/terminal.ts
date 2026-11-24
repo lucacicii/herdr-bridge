@@ -5,9 +5,15 @@ import { Terminal } from '@xterm/xterm';
 
 declare function acquireVsCodeApi(): {
   postMessage(message: unknown): void;
+  setState(state: unknown): void;
+  getState(): unknown;
 };
 
 const vscode = acquireVsCodeApi();
+const initialTerminalId = document.body.dataset.terminalId;
+if (initialTerminalId) {
+  vscode.setState({ terminalId: initialTerminalId });
+}
 
 const container = document.getElementById('terminal-container')!;
 const titleEl = document.getElementById('term-title')!;
@@ -164,7 +170,7 @@ resizeObserver.observe(container);
 
 window.addEventListener('message', (event) => {
   const msg = event.data as
-    | { type: 'ready'; title: string; cols: number; rows: number }
+    | { type: 'ready'; address?: string; title: string; cols: number; rows: number }
     | { type: 'data'; data: string }
     | { type: 'resize'; cols: number; rows: number }
     | { type: 'closed'; reason: string }
@@ -172,6 +178,9 @@ window.addEventListener('message', (event) => {
 
   switch (msg.type) {
     case 'ready':
+      if (msg.address) {
+        vscode.setState({ terminalId: msg.address });
+      }
       titleEl.textContent = msg.title;
       if (msg.cols > 0 && msg.rows > 0 && (msg.cols !== term.cols || msg.rows !== term.rows)) {
         term.resize(msg.cols, msg.rows);

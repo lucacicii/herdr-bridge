@@ -106,8 +106,8 @@ export class NativeTerminalHandle implements HerdrTerminalHandle {
     }
   }
 
-  reveal(): void {
-    this.terminal.show(false);
+  reveal(preserveFocus = false): void {
+    this.terminal.show(preserveFocus);
   }
 
   sendText(text: string, bracketed = true): void {

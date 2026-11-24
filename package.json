@@ -2,7 +2,7 @@
   "name": "herdr-core-bridge",
   "displayName": "Herdr Core Bridge",
   "description": "Connect VS Code to local herdr-core (hc) — manage Spaces, monitor live AI agent sessions, attach shared terminals in Native or XTerm Webview mode, and send editor code references.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "lucacicii",
   "icon": "resources/icon.png",
   "license": "MIT",
@@ -185,6 +185,21 @@
         "icon": "$(move)"
       },
       {
+        "command": "herdrBridge.previewInArp",
+        "title": "Preview Transcript in Agent Resume",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "herdrBridge.openNoteInArp",
+        "title": "Open Session Note in Agent Resume",
+        "icon": "$(note)"
+      },
+      {
+        "command": "herdrBridge.setGtdInArp",
+        "title": "Set GTD Status in Agent Resume",
+        "icon": "$(checklist)"
+      },
+      {
         "command": "herdrBridge.sendSelectionToTerminal",
         "title": "Herdr Bridge: Send Reference (@path#L) to Active Terminal"
       }
@@ -262,6 +277,21 @@
           "command": "herdrBridge.killTerminal",
           "when": "(view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)) || (view == herdrBridge.sessionsView && viewItem == herdrSession)",
           "group": "3_control@2"
+        },
+        {
+          "command": "herdrBridge.previewInArp",
+          "when": "herdrBridge.arpAvailable && ((view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)) || (view == herdrBridge.sessionsView && viewItem == herdrSession))",
+          "group": "4_arp@1"
+        },
+        {
+          "command": "herdrBridge.openNoteInArp",
+          "when": "herdrBridge.arpAvailable && ((view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)) || (view == herdrBridge.sessionsView && viewItem == herdrSession))",
+          "group": "4_arp@2"
+        },
+        {
+          "command": "herdrBridge.setGtdInArp",
+          "when": "herdrBridge.arpAvailable && ((view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)) || (view == herdrBridge.sessionsView && viewItem == herdrSession))",
+          "group": "4_arp@3"
         }
       ],
       "editor/context": [

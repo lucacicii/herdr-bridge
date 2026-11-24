@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import type { ArpSessionInfo } from '../commands/arpBridge';
 import type { HcTerminal } from '../hc/types';
 import type { HerdrHub } from '../hub/herdrHub';
 import {
@@ -77,10 +78,12 @@ export class SessionBucketItem extends vscode.TreeItem {
 export class SessionTreeItem extends vscode.TreeItem {
   constructor(
     readonly terminal: HcTerminal,
-    spaceName?: string
+    spaceName?: string,
+    syncedSession?: ArpSessionInfo
   ) {
     const prog = detectAgentProgram(terminal);
-    const rawTitle = terminal.status?.title || terminal.title || terminal.name || '';
+    const rawTitle =
+      syncedSession?.title || terminal.status?.title || terminal.title || terminal.name || '';
     const displayTitle = rawTitle.trim() || spaceName || (terminal.cwd ? path.basename(terminal.cwd) : terminal.address);
     super(`[${prog.label}] ${displayTitle}`, vscode.TreeItemCollapsibleState.None);
 
@@ -93,17 +96,19 @@ export class SessionTreeItem extends vscode.TreeItem {
       ? terminal.status.msg.trim().slice(0, 48)
       : '';
     const age = formatRelativeTime(terminal.status_ms || terminal.created_ms);
-    const location = spaceName || (terminal.cwd ? path.basename(terminal.cwd) : terminal.address);
+    const effectiveCwd = terminal.foreground?.cwd || terminal.cwd;
+    const location = spaceName || (effectiveCwd ? path.basename(effectiveCwd) : terminal.address);
 
     this.description = [location, progress || msgSnippet, age].filter(Boolean).join(' · ');
 
-    const sessionId = terminal.labels?.['alma.session'];
+    const sessionId = terminal.labels?.['alma.session'] || syncedSession?.id;
     this.tooltip = [
       `${prog.label} (${terminal.address})`,
+      syncedSession ? `Session Title: ${syncedSession.title}` : '',
       `Status: ${terminal.status?.state ?? 'idle'}${terminal.status?.kind ? ` (${terminal.status.kind})` : ''}`,
       terminal.status?.msg ? `Message: ${terminal.status.msg}` : '',
       spaceName ? `Space: ${spaceName}` : '',
-      terminal.cwd ? `CWD: ${terminal.cwd}` : '',
+      effectiveCwd ? `CWD: ${effectiveCwd}` : '',
       sessionId ? `Session: ${sessionId}` : '',
       age ? `Updated: ${age}` : '',
     ]
@@ -135,8 +140,15 @@ export class SessionsTreeProvider
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
   private readonly sub: vscode.Disposable;
 
-  constructor(private readonly hub: HerdrHub) {
+  constructor(
+    private readonly hub: HerdrHub,
+    private readonly resolveArpSession?: (term: HcTerminal) => ArpSessionInfo | undefined
+  ) {
     this.sub = this.hub.onDidChange(() => this._onDidChangeTreeData.fire());
+  }
+
+  refresh(): void {
+    this._onDidChangeTreeData.fire();
   }
 
   getBadge(): vscode.ViewBadge | undefined {
@@ -193,7 +205,12 @@ export class SessionsTreeProvider
 
     if (element instanceof SessionBucketItem) {
       return element.terminals.map(
-        (t) => new SessionTreeItem(t, this.hub.getSpaceNameForTerminal(t))
+        (t) =>
+          new SessionTreeItem(
+            t,
+            this.hub.getSpaceNameForTerminal(t),
+            this.resolveArpSession?.(t)
+          )
       );
     }
 

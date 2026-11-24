@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import type { ArpSessionInfo } from '../commands/arpBridge';
 import type { HcTerminal, HerdrSpace } from '../hc/types';
 import type { HerdrHub } from '../hub/herdrHub';
 import { formatTerminalDisplayName } from '../terminal/types';
@@ -70,21 +71,33 @@ export class UnassignedGroupItem extends vscode.TreeItem {
 }
 
 export class TerminalTreeItem extends vscode.TreeItem {
-  constructor(readonly terminal: HcTerminal) {
-    super(formatTerminalDisplayName(terminal), vscode.TreeItemCollapsibleState.None);
+  constructor(
+    readonly terminal: HcTerminal,
+    syncedSession?: ArpSessionInfo,
+    spaceFolder?: string
+  ) {
+    super(
+      formatTerminalDisplayName(terminal, syncedSession?.title),
+      vscode.TreeItemCollapsibleState.None
+    );
     this.contextValue = terminal.labels?.['herdr.space']
       ? 'herdrTerminal'
       : 'herdrTerminalUnassigned';
     this.iconPath = iconForTerminal(terminal);
 
     const status = terminal.status?.state || terminal.state;
-    const folder = terminal.cwd ? path.basename(terminal.cwd) : '';
-    this.description = [status, folder].filter(Boolean).join(' · ');
+    const effectiveCwd = terminal.foreground?.cwd || terminal.cwd;
+    const folder = effectiveCwd ? path.basename(effectiveCwd) : '';
+    const spaceBase = spaceFolder ? path.basename(spaceFolder) : '';
+    const folderLabel = folder && folder !== spaceBase ? folder : !spaceBase ? folder : '';
+    this.description = [status, folderLabel].filter(Boolean).join(' · ');
 
     const lines = [
       `Address: ${terminal.address}`,
+      syncedSession ? `Session: [${syncedSession.provider}] ${syncedSession.title} (${syncedSession.id})` : '',
       `State: ${terminal.state} (${terminal.status?.state ?? 'idle'})`,
-      terminal.cwd ? `CWD: ${terminal.cwd}` : '',
+      terminal.foreground?.name ? `Process: ${terminal.foreground.name}` : '',
+      effectiveCwd ? `CWD: ${effectiveCwd}` : '',
       terminal.status?.msg ? `Message: ${terminal.status.msg}` : '',
       `Size: ${terminal.cols}×${terminal.rows}`,
     ].filter(Boolean);
@@ -107,8 +120,15 @@ export class TerminalsTreeProvider
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
   private readonly sub: vscode.Disposable;
 
-  constructor(private readonly hub: HerdrHub) {
+  constructor(
+    private readonly hub: HerdrHub,
+    private readonly resolveArpSession?: (term: HcTerminal) => ArpSessionInfo | undefined
+  ) {
     this.sub = this.hub.onDidChange(() => this._onDidChangeTreeData.fire());
+  }
+
+  refresh(): void {
+    this._onDidChangeTreeData.fire();
   }
 
   getTreeItem(element: HerdrTreeElement): vscode.TreeItem {
@@ -126,11 +146,13 @@ export class TerminalsTreeProvider
     }
 
     if (element instanceof SpaceTreeItem) {
-      return element.space.terminals.map((t) => new TerminalTreeItem(t));
+      return element.space.terminals.map(
+        (t) => new TerminalTreeItem(t, this.resolveArpSession?.(t), element.space.folder)
+      );
     }
 
     if (element instanceof UnassignedGroupItem) {
-      return element.terminals.map((t) => new TerminalTreeItem(t));
+      return element.terminals.map((t) => new TerminalTreeItem(t, this.resolveArpSession?.(t)));
     }
 
     return [];

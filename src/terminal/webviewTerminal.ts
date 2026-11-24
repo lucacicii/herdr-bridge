@@ -36,20 +36,31 @@ export class WebviewTerminalHandle implements HerdrTerminalHandle {
     private readonly termInfo: HcTerminal,
     private readonly historyLines: number,
     private readonly onSwitchToNative: (terminalId: string) => void,
-    private readonly onBecameActive: (terminalId: string) => void
+    private readonly onBecameActive: (terminalId: string) => void,
+    existingPanel?: vscode.WebviewPanel
   ) {
     this.terminalId = termInfo.address;
 
-    this.panel = vscode.window.createWebviewPanel(
-      'herdrBridge.xtermTerminal',
-      `Herdr: ${formatTerminalDisplayName(termInfo)}`,
-      vscode.ViewColumn.Beside,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview')],
-      }
-    );
+    const webviewOptions = {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview')],
+    };
+
+    if (existingPanel) {
+      this.panel = existingPanel;
+      this.panel.title = `Herdr: ${formatTerminalDisplayName(termInfo)}`;
+      this.panel.webview.options = webviewOptions;
+    } else {
+      this.panel = vscode.window.createWebviewPanel(
+        'herdrBridge.xtermTerminal',
+        `Herdr: ${formatTerminalDisplayName(termInfo)}`,
+        vscode.ViewColumn.Beside,
+        {
+          ...webviewOptions,
+          retainContextWhenHidden: true,
+        }
+      );
+    }
 
     this.panel.iconPath = new vscode.ThemeIcon('terminal');
     this.panel.webview.html = this.buildHtml(this.panel.webview);
@@ -225,8 +236,8 @@ export class WebviewTerminalHandle implements HerdrTerminalHandle {
     void this.panel.webview.postMessage({ type: 'data', data });
   }
 
-  reveal(): void {
-    this.panel.reveal(vscode.ViewColumn.Beside, false);
+  reveal(preserveFocus = false): void {
+    this.panel.reveal(vscode.ViewColumn.Beside, preserveFocus);
   }
 
   sendText(text: string, bracketed = true): void {
@@ -372,7 +383,7 @@ export class WebviewTerminalHandle implements HerdrTerminalHandle {
     }
   </style>
 </head>
-<body>
+<body data-terminal-id="${this.escapeHtml(this.terminalId)}">
   <div class="root">
     <div class="toolbar">
       <div class="toolbar-left">

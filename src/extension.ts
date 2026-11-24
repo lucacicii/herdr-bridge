@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
+import { createHerdrBridgeApi, type HerdrBridgeApi } from './api';
+import { ArpSessionResolver, invokeArpActionForTerminal, syncArpContext } from './commands/arpBridge';
 import { sendSelectionToActiveTerminal } from './commands/editorRefs';
 import { findHcBinary } from './hc/detector';
+import type { HcTerminal } from './hc/types';
 import { HerdrHub } from './hub/herdrHub';
 import { SessionTransitionWatcher, type NotificationLevel } from './hub/sessionMonitor';
 import { TerminalManager } from './terminal/manager';
@@ -33,12 +36,23 @@ function resolveTerminalIdArg(arg: unknown): string | undefined {
   return undefined;
 }
 
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+function resolveTerminalFromArg(hub: HerdrHub, arg: unknown): HcTerminal | undefined {
+  if (arg && typeof arg === 'object' && 'terminal' in arg) {
+    const item = arg as TerminalTreeItem;
+    return item.terminal;
+  }
+  const id = resolveTerminalIdArg(arg);
+  return id ? hub.getTerminalById(id) : undefined;
+}
+
+export async function activate(context: vscode.ExtensionContext): Promise<HerdrBridgeApi> {
   const hub = new HerdrHub(getConfiguredSocketPath());
-  const terminalManager = new TerminalManager(context.extensionUri, hub);
+  const arpResolver = new ArpSessionResolver();
+  const terminalManager = new TerminalManager(context.extensionUri, hub, context.workspaceState);
+  let hubInitPromise: Promise<void> | undefined;
   const statusProvider = new StatusTreeProvider(hub, terminalManager);
-  const sessionsProvider = new SessionsTreeProvider(hub);
-  const terminalsProvider = new TerminalsTreeProvider(hub);
+  const sessionsProvider = new SessionsTreeProvider(hub, (t) => arpResolver.resolveForTerminal(t));
+  const terminalsProvider = new TerminalsTreeProvider(hub, (t) => arpResolver.resolveForTerminal(t));
   const statusBar = new HerdrStatusBar(hub, terminalManager);
 
   const sessionsTreeView = vscode.window.createTreeView('herdrBridge.sessionsView', {
@@ -64,6 +78,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     hub,
+    arpResolver,
     terminalManager,
     statusProvider,
     sessionsProvider,
@@ -71,8 +86,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     terminalsProvider,
     statusBar,
     hub.onDidChange(updateMonitoring),
+    arpResolver.onDidChange(() => {
+      sessionsProvider.refresh();
+      terminalsProvider.refresh();
+    }),
+    vscode.extensions.onDidChange(() => {
+      void syncArpContext();
+      void arpResolver.ensureConnected();
+    }),
     vscode.window.registerTreeDataProvider('herdrBridge.statusView', statusProvider),
-    vscode.window.registerTreeDataProvider('herdrBridge.terminalsView', terminalsProvider)
+    vscode.window.registerTreeDataProvider('herdrBridge.terminalsView', terminalsProvider),
+    vscode.window.registerWebviewPanelSerializer('herdrBridge.xtermTerminal', {
+      async deserializeWebviewPanel(panel, state) {
+        await hubInitPromise?.catch(() => undefined);
+        await terminalManager.reviveWebviewPanel(panel, state);
+      },
+    })
   );
 
   context.subscriptions.push(
@@ -250,6 +279,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       try {
         await hub.client.killTerminal(terminalId);
+        terminalManager.closeTerminal(terminalId);
         await hub.refresh();
       } catch (err) {
         void vscode.window.showErrorMessage(
@@ -395,12 +425,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
 
+    vscode.commands.registerCommand('herdrBridge.previewInArp', (arg) =>
+      invokeArpActionForTerminal(resolveTerminalFromArg(hub, arg), 'preview', arpResolver)
+    ),
+    vscode.commands.registerCommand('herdrBridge.openNoteInArp', (arg) =>
+      invokeArpActionForTerminal(resolveTerminalFromArg(hub, arg), 'note', arpResolver)
+    ),
+    vscode.commands.registerCommand('herdrBridge.setGtdInArp', (arg) =>
+      invokeArpActionForTerminal(resolveTerminalFromArg(hub, arg), 'gtd', arpResolver)
+    ),
+
     vscode.commands.registerCommand('herdrBridge.sendSelectionToTerminal', () =>
       sendSelectionToActiveTerminal(hub, terminalManager)
     )
   );
 
-  void hub.initialize(getAutoStartConfig());
+  void syncArpContext();
+  void arpResolver.initialize();
+  hubInitPromise = hub.initialize(getAutoStartConfig());
+  void hubInitPromise.then(() => terminalManager.restoreNativeTerminals()).catch(() => undefined);
+  return createHerdrBridgeApi(hub, terminalManager);
 }
 
 export function deactivate(): void {
