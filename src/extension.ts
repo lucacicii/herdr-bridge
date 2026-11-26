@@ -343,8 +343,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<HerdrB
           line: cmdLine.trim() || undefined,
           keep: true,
         });
-        if (space && hub.herdrApp.isAvailable()) {
-          await hub.herdrApp.keepTerminalInSpace(created.address, space.id);
+        if (space) {
+          try {
+            await hub.assignTerminalToSpace(created.address, space.id, space.folder);
+          } catch (assignErr) {
+            void vscode.window.showWarningMessage(
+              `Created terminal ${created.address}, but could not add to Space "${space.name}" in Herdr.app: ${
+                assignErr instanceof Error ? assignErr.message : String(assignErr)
+              }`
+            );
+          }
         }
         await hub.refresh();
         await terminalManager.openTerminal(created.address);
@@ -394,10 +402,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<HerdrB
       if (!terminalId) {
         return;
       }
-      if (!hub.herdrApp.isAvailable()) {
-        void vscode.window.showWarningMessage('Herdr app CLI (herdr-app) is required to adopt terminals.');
-        return;
-      }
       const spaces = hub.getSpaces();
       if (spaces.length === 0) {
         void vscode.window.showInformationMessage('No Herdr Spaces found. Create a Space first.');
@@ -416,7 +420,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<HerdrB
         return;
       }
       try {
-        await hub.herdrApp.keepTerminalInSpace(terminalId, picked.spaceId);
+        await hub.assignTerminalToSpace(terminalId, picked.spaceId, picked.detail);
         await hub.refresh();
       } catch (err) {
         void vscode.window.showErrorMessage(

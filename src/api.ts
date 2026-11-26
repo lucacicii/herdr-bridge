@@ -69,9 +69,10 @@ export function createHerdrBridgeApi(
           .find((sp) => normalizeDir(sp.folder) === normCwd);
         targetSpaceId = matched?.id;
       }
-      if (targetSpaceId && hub.herdrApp.isAvailable()) {
-        await hub.herdrApp
-          .keepTerminalInSpace(created.address, targetSpaceId)
+      if (targetSpaceId) {
+        const targetSpace = hub.getSpaces().find((sp) => sp.id === targetSpaceId);
+        await hub
+          .assignTerminalToSpace(created.address, targetSpaceId, targetSpace?.folder)
           .catch(() => undefined);
       }
       await hub.refresh();

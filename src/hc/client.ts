@@ -203,6 +203,10 @@ export class HcClient {
     return this.call<void>('terminal.rm', { terminal });
   }
 
+  labelTerminal(terminal: string, labels: Record<string, string>): Promise<HcTerminal> {
+    return this.call<HcTerminal>('terminal.label', { terminal, labels });
+  }
+
   async docGet<T = unknown>(name: string): Promise<T> {
     const res = await this.call<{ value: T; version: number }>('doc.get', { name });
     return res.value;

@@ -2,7 +2,7 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { HcClient, type HcEventStream } from '../hc/client';
 import { checkEnvironment, ensureDaemonIfInstalled, findHcBinary, startDaemon } from '../hc/detector';
-import { HerdrAppClient } from '../hc/happ';
+import { HerdrAppClient, isNoHerdrWindowError } from '../hc/happ';
 import type { HcAppDoc, HcAppSpace, HcEnvStatus, HcTerminal, HerdrSpace } from '../hc/types';
 import { summarizeSessions, type SessionSummary } from './sessionMonitor';
 
@@ -214,6 +214,35 @@ export class HerdrHub implements vscode.Disposable {
       this.startEventLoop();
     }
     return Boolean(this.envStatus?.daemon.running);
+  }
+
+  /**
+   * Assign a terminal to a Herdr Space. Uses Herdr.app GUI when a window is open,
+   * and falls back to setting `herdr.space` directly in herdr-core when no Herdr window
+   * is running or the CLI is unavailable.
+   */
+  async assignTerminalToSpace(
+    terminalId: string,
+    spaceId: string,
+    spaceFolder?: string
+  ): Promise<'app' | 'label'> {
+    if (this.herdrApp.isAvailable()) {
+      try {
+        await this.herdrApp.keepTerminalInSpace(terminalId, spaceId);
+        return 'app';
+      } catch (err) {
+        if (!isNoHerdrWindowError(err)) {
+          throw err;
+        }
+      }
+    }
+
+    const labels: Record<string, string> = { 'herdr.space': spaceId };
+    if (spaceFolder) {
+      labels.workspace = spaceFolder;
+    }
+    await this.client.labelTerminal(terminalId, labels);
+    return 'label';
   }
 
   private scheduleRefresh(delayMs = 150): void {

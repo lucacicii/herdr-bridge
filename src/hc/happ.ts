@@ -58,6 +58,18 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export function isNoHerdrWindowError(err: unknown): boolean {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return (
+    msg.includes('no herdr window') ||
+    msg.includes('connection refused') ||
+    msg.includes('econnrefused') ||
+    msg.includes('os error 61') ||
+    msg.includes('enoent') ||
+    msg.includes('no such file or directory')
+  );
+}
+
 export class HerdrAppClient {
   private cachedPath: string | undefined;
   private lookedUp = false;
@@ -133,8 +145,11 @@ export class HerdrAppClient {
       if (active) {
         previousSpaceId = active.id;
       }
-    } catch {
-      // ignore if ls fails temporarily
+    } catch (err) {
+      if (isNoHerdrWindowError(err)) {
+        throw err;
+      }
+      // ignore if ls fails temporarily for other reasons
     }
 
     await this.doCommand('space.select', { id: spaceId });
