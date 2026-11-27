@@ -29,6 +29,7 @@ When both extensions are installed, they automatically connect via an in-editor 
 
 - **Readable Session Titles**: Herdr Core Bridge displays matched session titles from Agent Resume Panel on live Herdr sessions and Space terminals instead of raw terminal IDs.
 - **One-Click Context Actions**: Right-click any terminal in Herdr Bridge to **Preview**, **Open Note**, or **Set GTD Status** directly in Agent Resume Panel.
+- **Manual Link / Unlink**: Right-click any terminal to **Link Terminal to Agent Resume Session...** or unlink it. Linking refuses a terminal that demonstrably runs a different session, and both actions re-read the label afterwards to catch another app re-asserting it.
 - **Seamless Resume & Dispatch**: Agent Resume Panel displays live Herdr status badges in its tree views, auto-resumes Herdr-tracked sessions through Herdr Core Bridge, and syncs project aliases to Herdr Space names.
 
 ### Configuration

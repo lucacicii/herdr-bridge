@@ -3,7 +3,6 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
-import type { HcAppSpace } from './types';
 
 const execFileAsync = promisify(execFile);
 
@@ -54,22 +53,6 @@ export function findHerdrAppBinary(): string | undefined {
   return undefined;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export function isNoHerdrWindowError(err: unknown): boolean {
-  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
-  return (
-    msg.includes('no herdr window') ||
-    msg.includes('connection refused') ||
-    msg.includes('econnrefused') ||
-    msg.includes('os error 61') ||
-    msg.includes('enoent') ||
-    msg.includes('no such file or directory')
-  );
-}
-
 export class HerdrAppClient {
   private cachedPath: string | undefined;
   private lookedUp = false;
@@ -108,12 +91,6 @@ export class HerdrAppClient {
     return parsed;
   }
 
-  async listSpaces(): Promise<HcAppSpace[]> {
-    const raw = await this.run(['ls']);
-    const parsed = JSON.parse(raw) as { spaces?: HcAppSpace[] };
-    return parsed.spaces ?? [];
-  }
-
   async createSpace(name: string, folder: string): Promise<string> {
     const args: Record<string, string> = { folder, focus: 'true' };
     if (name.trim()) {
@@ -134,45 +111,4 @@ export class HerdrAppClient {
     await this.doCommand('space.rename', { id: spaceId, name });
   }
 
-  async keepTerminalInSpace(terminalId: string, spaceId: string): Promise<void> {
-    if (!terminalId || !spaceId) {
-      return;
-    }
-    let previousSpaceId = '';
-    try {
-      const spaces = await this.listSpaces();
-      const active = spaces.find((s) => s.active && s.id !== spaceId);
-      if (active) {
-        previousSpaceId = active.id;
-      }
-    } catch (err) {
-      if (isNoHerdrWindowError(err)) {
-        throw err;
-      }
-      // ignore if ls fails temporarily for other reasons
-    }
-
-    await this.doCommand('space.select', { id: spaceId });
-
-    const deadline = Date.now() + 10000;
-    while (true) {
-      try {
-        await this.doCommand('terminal.keep', { terminal: terminalId, place: 'tab' });
-        break;
-      } catch (err) {
-        if (Date.now() >= deadline) {
-          throw err;
-        }
-        await sleep(200);
-      }
-    }
-
-    if (previousSpaceId) {
-      try {
-        await this.doCommand('space.select', { id: previousSpaceId });
-      } catch {
-        // non-fatal
-      }
-    }
-  }
 }

@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
 import { createHerdrBridgeApi, type HerdrBridgeApi } from './api';
-import { ArpSessionResolver, invokeArpActionForTerminal, syncArpContext } from './commands/arpBridge';
+import {
+  ArpSessionResolver,
+  invokeArpActionForTerminal,
+  linkTerminalToArpSession,
+  syncArpContext,
+  unlinkTerminalFromArpSession,
+} from './commands/arpBridge';
 import { sendSelectionToActiveTerminal } from './commands/editorRefs';
 import { findHcBinary } from './hc/detector';
 import type { HcTerminal } from './hc/types';
@@ -48,6 +54,10 @@ function resolveTerminalFromArg(hub: HerdrHub, arg: unknown): HcTerminal | undef
 export async function activate(context: vscode.ExtensionContext): Promise<HerdrBridgeApi> {
   const hub = new HerdrHub(getConfiguredSocketPath());
   const arpResolver = new ArpSessionResolver();
+  const arpLabelTarget = {
+    getTerminal: (address: string) => hub.client.getTerminal(address).catch(() => undefined),
+    refresh: () => hub.refresh(),
+  };
   const terminalManager = new TerminalManager(context.extensionUri, hub, context.workspaceState);
   let hubInitPromise: Promise<void> | undefined;
   const statusProvider = new StatusTreeProvider(hub, terminalManager);
@@ -430,13 +440,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<HerdrB
     }),
 
     vscode.commands.registerCommand('herdrBridge.previewInArp', (arg) =>
-      invokeArpActionForTerminal(resolveTerminalFromArg(hub, arg), 'preview', arpResolver)
+      invokeArpActionForTerminal(resolveTerminalFromArg(hub, arg), 'preview')
     ),
     vscode.commands.registerCommand('herdrBridge.openNoteInArp', (arg) =>
-      invokeArpActionForTerminal(resolveTerminalFromArg(hub, arg), 'note', arpResolver)
+      invokeArpActionForTerminal(resolveTerminalFromArg(hub, arg), 'note')
     ),
     vscode.commands.registerCommand('herdrBridge.setGtdInArp', (arg) =>
-      invokeArpActionForTerminal(resolveTerminalFromArg(hub, arg), 'gtd', arpResolver)
+      invokeArpActionForTerminal(resolveTerminalFromArg(hub, arg), 'gtd')
+    ),
+    vscode.commands.registerCommand('herdrBridge.linkToArpSession', (arg) =>
+      linkTerminalToArpSession(arpLabelTarget, resolveTerminalFromArg(hub, arg), arpResolver)
+    ),
+    vscode.commands.registerCommand('herdrBridge.unlinkFromArpSession', (arg) =>
+      unlinkTerminalFromArpSession(arpLabelTarget, resolveTerminalFromArg(hub, arg), arpResolver)
     ),
 
     vscode.commands.registerCommand('herdrBridge.sendSelectionToTerminal', () =>

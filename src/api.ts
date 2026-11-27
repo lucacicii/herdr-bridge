@@ -6,7 +6,7 @@ import type { HerdrHub } from './hub/herdrHub';
 import type { TerminalManager } from './terminal/manager';
 import type { TerminalMode } from './terminal/types';
 
-function normalizeDir(dir?: string): string {
+export function normalizeDir(dir?: string): string {
   if (!dir) {
     return '';
   }
@@ -69,15 +69,19 @@ export function createHerdrBridgeApi(
           .find((sp) => normalizeDir(sp.folder) === normCwd);
         targetSpaceId = matched?.id;
       }
+      let assignedSpaceId: string | undefined;
       if (targetSpaceId) {
         const targetSpace = hub.getSpaces().find((sp) => sp.id === targetSpaceId);
-        await hub
+        // Report the space only when the assignment actually succeeded, so ARP's own
+        // fallback can still run and the terminal is not silently left unassigned.
+        assignedSpaceId = await hub
           .assignTerminalToSpace(created.address, targetSpaceId, targetSpace?.folder)
+          .then(() => targetSpaceId)
           .catch(() => undefined);
       }
       await hub.refresh();
       await terminalManager.openTerminal(created.address);
-      return { address: created.address, spaceId: targetSpaceId };
+      return { address: created.address, spaceId: assignedSpaceId };
     },
     sendTextToActive: async (text) => {
       const activeId = terminalManager.getActiveTerminalId();

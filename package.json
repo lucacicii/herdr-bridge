@@ -200,6 +200,16 @@
         "icon": "$(checklist)"
       },
       {
+        "command": "herdrBridge.linkToArpSession",
+        "title": "Link Terminal to Agent Resume Session...",
+        "icon": "$(link)"
+      },
+      {
+        "command": "herdrBridge.unlinkFromArpSession",
+        "title": "Unlink Terminal from Agent Resume Session",
+        "icon": "$(debug-disconnect)"
+      },
+      {
         "command": "herdrBridge.sendSelectionToTerminal",
         "title": "Herdr Bridge: Send Reference (@path#L) to Active Terminal"
       }
@@ -292,6 +302,16 @@
           "command": "herdrBridge.setGtdInArp",
           "when": "herdrBridge.arpAvailable && ((view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)) || (view == herdrBridge.sessionsView && viewItem == herdrSession))",
           "group": "4_arp@3"
+        },
+        {
+          "command": "herdrBridge.linkToArpSession",
+          "when": "herdrBridge.arpAvailable && view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)",
+          "group": "4_arp@4"
+        },
+        {
+          "command": "herdrBridge.unlinkFromArpSession",
+          "when": "herdrBridge.arpAvailable && view == herdrBridge.terminalsView && (viewItem == herdrTerminal || viewItem == herdrTerminalUnassigned)",
+          "group": "4_arp@5"
         }
       ],
       "editor/context": [

@@ -2,7 +2,7 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { HcClient, type HcEventStream } from '../hc/client';
 import { checkEnvironment, ensureDaemonIfInstalled, findHcBinary, startDaemon } from '../hc/detector';
-import { HerdrAppClient, isNoHerdrWindowError } from '../hc/happ';
+import { HerdrAppClient } from '../hc/happ';
 import type { HcAppDoc, HcAppSpace, HcEnvStatus, HcTerminal, HerdrSpace } from '../hc/types';
 import { summarizeSessions, type SessionSummary } from './sessionMonitor';
 
@@ -217,32 +217,23 @@ export class HerdrHub implements vscode.Disposable {
   }
 
   /**
-   * Assign a terminal to a Herdr Space. Uses Herdr.app GUI when a window is open,
-   * and falls back to setting `herdr.space` directly in herdr-core when no Herdr window
-   * is running or the CLI is unavailable.
+   * Assign a terminal to a Herdr Space by writing the `herdr.space` label in herdr-core.
+   *
+   * The label is the contract: Herdr.app watches label events and gives the terminal a
+   * tab in that space within about a second, whether or not its window is open, so a
+   * single write path covers both cases (verified 2026-11-27: a label-only assignment
+   * produced a tab and a `where` label with the window open).
    */
   async assignTerminalToSpace(
     terminalId: string,
     spaceId: string,
     spaceFolder?: string
-  ): Promise<'app' | 'label'> {
-    if (this.herdrApp.isAvailable()) {
-      try {
-        await this.herdrApp.keepTerminalInSpace(terminalId, spaceId);
-        return 'app';
-      } catch (err) {
-        if (!isNoHerdrWindowError(err)) {
-          throw err;
-        }
-      }
-    }
-
+  ): Promise<void> {
     const labels: Record<string, string> = { 'herdr.space': spaceId };
     if (spaceFolder) {
       labels.workspace = spaceFolder;
     }
     await this.client.labelTerminal(terminalId, labels);
-    return 'label';
   }
 
   private scheduleRefresh(delayMs = 150): void {
