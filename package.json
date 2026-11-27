@@ -2,7 +2,7 @@
   "name": "herdr-core-bridge",
   "displayName": "Herdr Core Bridge",
   "description": "Connect VS Code to local herdr-core (hc) — manage Spaces, monitor live AI agent sessions, attach shared terminals in Native or XTerm Webview mode, and send editor code references.",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "publisher": "lucacicii",
   "icon": "resources/icon.png",
   "license": "MIT",
